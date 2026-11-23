@@ -1,0 +1,16 @@
+extern const GeoLayout rosa_wing_crown_Wing_Cap_Switch_opt1[];
+extern const GeoLayout rosa_wing_crown_geo[];
+extern Lights1 rosa_wing_crown_Crown__CAP__lights;
+extern u8 rosa_wing_crown_crown_rgba16[];
+extern u8 rosa_wing_crown_wing_ia8[];
+extern Vtx rosa_wing_crown_Wing_Cap_mesh_layer_1_vtx_0[40];
+extern Gfx rosa_wing_crown_Wing_Cap_mesh_layer_1_tri_0[];
+extern Vtx rosa_wing_crown_Wings_mesh_layer_4_vtx_0[8];
+extern Gfx rosa_wing_crown_Wings_mesh_layer_4_tri_0[];
+extern Gfx mat_rosa_wing_crown_Crown__CAP_[];
+extern Gfx mat_revert_rosa_wing_crown_Crown__CAP_[];
+extern Gfx mat_rosa_wing_crown_Wing_New[];
+extern Gfx mat_revert_rosa_wing_crown_Wing_New[];
+extern Gfx rosa_wing_crown_Wing_Cap_mesh_layer_1[];
+extern Gfx rosa_wing_crown_Wings_mesh_layer_4[];
+extern Gfx rosa_wing_crown_material_revert_render_settings[];

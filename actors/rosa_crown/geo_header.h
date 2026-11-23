@@ -1,0 +1,10 @@
+extern const GeoLayout rosa_crown_Normal_Cap_State_Switch_opt1[];
+extern const GeoLayout rosa_crown_geo[];
+extern Lights1 rosa_crown_Crown__CAP__lights;
+extern u8 rosa_crown_crown_rgba16[];
+extern Vtx rosa_crown_Normal_Cap_DL_mesh_layer_1_vtx_0[40];
+extern Gfx rosa_crown_Normal_Cap_DL_mesh_layer_1_tri_0[];
+extern Gfx mat_rosa_crown_Crown__CAP_[];
+extern Gfx mat_revert_rosa_crown_Crown__CAP_[];
+extern Gfx rosa_crown_Normal_Cap_DL_mesh_layer_1[];
+extern Gfx rosa_crown_material_revert_render_settings[];
