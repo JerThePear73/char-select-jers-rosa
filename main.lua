@@ -9,39 +9,6 @@ if not _G.charSelectExists then
     return 0
 end
 
-local function rosa_dress_physbone(rotNode)
-    local o = geo_get_current_object()
-    local m = geo_get_mario_state()
-    local isMario = m.marioObj == o
-    --local ang = degrees_to_sm64(50)
-    local spinTime = 26
-
-    if isMario then
-        if m.action == ACT_SIDE_FLIP then
-            if m.actionArg ~= 73 then -- fucked up compat of evilswag
-                rotNode.rotation.x = math.clamp(m.vel.y, 0, 100) * 0x80
-                rotNode.rotation.z = math.clamp(m.vel.y, -100, 0) * -0x80
-            end
-        end
-        if m.action == ACT_DIVE then
-            rotNode.rotation.x = 0
-            rotNode.rotation.z = m.vel.y * -0x40
-        end
-        if m.action == ACT_ROSA_ACTION and m.actionArg <= 2 then
-            rotNode.rotation.y = degrees_to_sm64((spinTime - (math.clamp(m.actionTimer, 0, spinTime))) * 4)
-        else
-            rotNode.rotation.y = 0
-        end
-        if m.action == ACT_BUTT_SLIDE then
-            rotNode.rotation.z = -0x1000
-        end
-        if m.action & ACT_FLAG_RIDING_SHELL ~= 0 then
-            rotNode.rotation.x = -0x80
-            rotNode.rotation.z = -0x1000
-        end
-    end
-end
-
 -- Models --
 local E_MODEL_ROSA = smlua_model_util_get_id('jers_rosalina_geo')
 init_physbone_chain(E_MODEL_ROSA, 0, 0.2, 1, 90, 40)
@@ -56,8 +23,6 @@ init_physbone_chain(E_MODEL_ROSA_RACER, 0, 0.2, 1, 90, 90)
 local E_MODEL_ROSA_WITCH = smlua_model_util_get_id('jers_rosalina_witch_geo')
 init_physbone_chain(E_MODEL_ROSA_WITCH, 0, 0.2, 1, 90, 40)
 init_physbone_chain(E_MODEL_ROSA_WITCH, 1, 0.15, 1, 15, 30, rosa_dress_physbone)
-
-local E_MODEL_STARBIT_COIN = smlua_model_util_get_id("jers_rosa_starbit_coin_geo")
 
 local RosaModels = {
     E_MODEL_ROSA,
