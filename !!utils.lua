@@ -10,6 +10,25 @@ SOUND_ROSA_STARBIT_SHOOT    = audio_sample_load("sound_rosa_starbit_shoot.ogg")
 TEX_ROSA_TARGET_POITNER     = get_texture_info("rosa_hud_pointer")
 TEX_ROSA_STARBIT            = get_texture_info("rosa_hud_starbit")
 
+rosaStarbitRange = 2000
+rosaGrabRange = 500
+
+rosaAttackTypes = {
+    [id_bhvEnemyLakitu]     = true,
+    [id_bhvFlyGuy]          = true,
+    [id_bhvSnufit]          = true,
+    [id_bhvSwoop]           = true,
+    [id_bhvSpindrift]       = true,
+    [id_bhvFlyingBookend]   = true,
+}
+
+rosaGrabTypes = {
+    [id_bhvBreakableBoxSmall]   = true,
+    [id_bhvBobomb]              = true,
+    [id_bhvJumpingBox]          = true,
+    [id_bhvSmallPenguin]         = true,
+}
+
 function pause_check()
     local m = gMarioStates[0]
 
@@ -27,7 +46,7 @@ function rosa_dress_physbone(rotNode)
     local m = geo_get_mario_state()
     local isMario = m.marioObj == o
     --local ang = degrees_to_sm64(50)
-    local spinTime = 26
+    local spinTime = m.pos.y == m.floorHeight and 20 or 26
 
     if isMario then
         if m.action == ACT_SIDE_FLIP then
@@ -40,12 +59,15 @@ function rosa_dress_physbone(rotNode)
             rotNode.rotation.x = 0
             rotNode.rotation.z = m.vel.y * -0x40
         end
-        if m.action == ACT_ROSA_ACTION and m.actionArg <= 2 then
+        if (m.action == ACT_ROSA_ATTACK or m.action == ACT_ROSA_ACTION) and m.actionArg <= 2 then
             rotNode.rotation.y = degrees_to_sm64((spinTime - (math.clamp(m.actionTimer, 0, spinTime))) * 4)
+        elseif m.action == ACT_IDLE then
+            rotNode.rotation.x = math.sin((m.marioObj.header.gfx.animInfo.animFrame)*0.21) * degrees_to_sm64(5)
+            rotNode.rotation.y = math.sin((m.marioObj.header.gfx.animInfo.animFrame + 15)*0.21) * degrees_to_sm64(20)
         else
             rotNode.rotation.y = 0
         end
-        if m.action == ACT_BUTT_SLIDE then
+        if m.action == ACT_BUTT_SLIDE or m.action == ACT_HOLD_BUTT_SLIDE then
             rotNode.rotation.z = -0x1000
         end
         if m.action & ACT_FLAG_RIDING_SHELL ~= 0 then

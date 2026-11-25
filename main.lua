@@ -210,16 +210,31 @@ local ANIMTABLE_ROSA = {
                                         m.marioBodyState.torsoAngle.x = 0
                                         m.marioBodyState.torsoAngle.z = 0
                                     end,
-    [CHAR_ANIM_IDLE_HEAD_LEFT]      = "rosa_idle",
-    [CHAR_ANIM_IDLE_HEAD_RIGHT]     = "rosa_idle",
-    [CHAR_ANIM_IDLE_HEAD_CENTER]    = "rosa_idle",
-    [CHAR_ANIM_FIRST_PERSON]        = "rosa_idle",
+    [CHAR_ANIM_IDLE_HEAD_LEFT]      = "jers_rosa_idle_left",
+    [CHAR_ANIM_IDLE_HEAD_RIGHT]     = "jers_rosa_idle_right",
+    [CHAR_ANIM_IDLE_HEAD_CENTER]    = "jers_rosa_idle_center",
+    [CHAR_ANIM_FIRST_PERSON]        = "jers_rosa_idle",
 }
 local EYETABLE_ROSA = {
     [_G.charSelect.CS_ANIM_MENU]    = MARIO_EYES_LOOK_RIGHT,
+    [CHAR_ANIM_IDLE_HEAD_LEFT]      = MARIO_EYES_LOOK_LEFT,
+    [CHAR_ANIM_IDLE_HEAD_RIGHT]     = MARIO_EYES_LOOK_RIGHT,
+    [CHAR_ANIM_IDLE_HEAD_CENTER]    = function(m, frame)
+                                        if frame > 9 then
+                                            return MARIO_EYES_OPEN
+                                        elseif frame > 6 then
+                                            return MARIO_EYES_HALF_CLOSED
+                                        elseif frame > 3 then
+                                            return MARIO_EYES_CLOSED
+                                        else
+                                            return MARIO_EYES_HALF_CLOSED
+                                        end
+                                    end,
+    [CHAR_ANIM_FIRST_PERSON]        = MARIO_EYES_LOOK_DOWN,
 }
 local HANDTABLE_ROSA = {
     [_G.charSelect.CS_ANIM_MENU]    = MARIO_HAND_PEACE_SIGN,
+    [CHAR_ANIM_RUNNING]             = MARIO_HAND_OPEN,
     [CHAR_ANIM_FIRST_PUNCH]         = rosa_punch_hands,
     [CHAR_ANIM_SECOND_PUNCH]        = rosa_punch_hands,
     [CHAR_ANIM_FIRST_PUNCH_FAST]    = rosa_punch_hands,

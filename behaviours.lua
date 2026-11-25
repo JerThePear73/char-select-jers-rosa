@@ -1,12 +1,3 @@
-rosaAttackTypes = {
-    [id_bhvEnemyLakitu]     = true,
-    [id_bhvFlyGuy]          = true,
-    [id_bhvSnufit]          = true,
-    [id_bhvSwoop]           = true,
-    [id_bhvSpindrift]       = true,
-    [id_bhvFlyingBookend]   = true,
-}
-
 local function bhv_starbit_proj_init(o)
     o.oFlags = OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE
     o.oTimer = 0

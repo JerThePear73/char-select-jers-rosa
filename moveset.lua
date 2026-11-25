@@ -6,44 +6,18 @@ local ARG_GALAXY_SPIN_FAST = 1
 local ARG_GALAXY_SPIN_GROUND = 2
 local ARG_CREATE_SLING_STAR = 3
 
-local rosaRange = 2000
-
 gRosaStates = {}
 for i = 0, MAX_PLAYERS - 1 do
     gRosaStates[i] = {
         targetObj = nil,
         isShooting = false,
         starbits = 0,
-    }
-end
-
-local function get_int_types(m)
-
-end
-
----@param m MarioState
-local function get_rosa_wand_pos(m)
-    local handPos = gVec3fZero{}
-    local handAng = gVec3sZero{}
-    local handAng2nd = gVec3sZero{}
-    get_mario_anim_part_pos(m, MARIO_ANIM_PART_RIGHT_HAND, handPos)
-    get_mario_anim_part_rot(m, MARIO_ANIM_PART_RIGHT_HAND, handAng)
-    handAng2nd.x = handAng.x
-    handAng2nd.y = handAng.y + degrees_to_sm64(90)
-    handAng2nd.z = handAng.z
-    local localOffset = {
-        x = (100 * sins(handAng2nd.z)),
-        y = 0,
-        z = (100 * coss(handAng2nd.z)),
-    }
-
-    local worldOffset = {x = localOffset.x, y = localOffset.y, z = localOffset.z}
-    vec3f_rotate_zxy(worldOffset, handAng)
-
-    return {
-        x = handPos.x + worldOffset.x,
-        y = handPos.y + worldOffset.y,
-        z = handPos.z + worldOffset.z,
+        grabbedObj = {
+            active = false,
+            obj = nil,
+            angle = 0,
+            dist = 0,
+        }
     }
 end
 
@@ -66,7 +40,7 @@ end
 local function rosa_find_target(m)
     for key in pairs(rosaAttackTypes) do
         local nearestObj = cur_obj_nearest_object_with_behavior(get_behavior_from_id(key))
-        if nearestObj and dist_between_objects(m.marioObj, nearestObj) < rosaRange then
+        if nearestObj and dist_between_objects(m.marioObj, nearestObj) < rosaStarbitRange then
             return nearestObj
         end
     end
@@ -88,11 +62,75 @@ local function rosa_shoot_starbit(m)
 end
 
 ---@param m MarioState
+---@param o Object grabbedObj
+local function rosa_gravity_grab_init(m, o)
+    local e = gRosaStates[m.playerIndex]
+    e.grabbedObj.active = true
+    e.grabbedObj.obj = o
+    e.grabbedObj.dist = dist_between_object_and_point(o, m.pos.x, o.oPosY, m.pos.z)
+    e.grabbedObj.angle = mario_obj_angle_to_object(m, o)
+end
+local function rosa_gravity_grab_loop(m, o)
+    local e = gRosaStates[m.playerIndex]
+    if not o or o.activeFlags == ACTIVE_FLAG_DEACTIVATED then
+        e.grabbedObj.active = false
+        e.grabbedObj.obj = nil
+        o.oIntangibleTimer = 0
+    end
+
+    local grabbedObjDist3D = dist_between_objects(m.marioObj, e.grabbedObj.obj)
+
+    if m.action & ACT_FLAG_INTANGIBLE == 0 and e.grabbedObj.dist > 0 then
+        e.grabbedObj.dist = e.grabbedObj.dist - 15
+    end
+    e.grabbedObj.angle = e.grabbedObj.angle + ((grabbedObjDist3D + 1000) * 2)
+
+    o.oPosY = approach_s16_asymptotic(o.oPosY, m.pos.y + 100, 5)
+    o.oPosX = m.pos.x + sins(e.grabbedObj.angle) * e.grabbedObj.dist
+    o.oPosZ = m.pos.z + coss(e.grabbedObj.angle) * e.grabbedObj.dist
+    obj_set_vel(o, 0, 0, 0)
+    o.oForwardVel = 0
+    o.oMoveAngleYaw = e.grabbedObj.angle
+    o.oFaceAngleYaw = e.grabbedObj.angle
+
+    if m.playerIndex == 0 and (
+    e.grabbedObj.dist < 70 and
+    e.grabbedObj.obj.oPosY < m.pos.y + 200 and
+    e.grabbedObj.obj.oPosY > m.pos.y - 50
+    ) then
+        o.oIntangibleTimer = 0
+
+        if m.action & (ACT_FLAG_INVULNERABLE | ACT_FLAG_INTANGIBLE) ~= 0 or m.action & ACT_GROUP_MASK >= ACT_GROUP_SUBMERGED then
+            m.usedObj = nil
+        else
+            m.interactObj = o
+            m.usedObj = o
+            if o.oSyncID ~= 0 then network_send_object(o, true) end
+            if m.action & ACT_FLAG_AIR == 0 then
+                set_mario_action(m, ACT_HOLD_IDLE, 0)
+            else
+                set_mario_action(m, ACT_HOLD_FREEFALL, 0)
+            end
+            mario_grab_used_object(m)
+        end
+        e.grabbedObj.active = false
+    else
+        o.oIntangibleTimer = -1
+        spawn_non_sync_object(id_bhvShrinkParticle, E_MODEL_SPARKLES_ANIMATION, o.oPosX, o.oPosY, o.oPosZ, function(trail)
+            trail.oBehParams = 2
+        end)
+    end
+end
+-----------
+-- MOVES --
+-----------
+
+---@param m MarioState
 local function act_galaxy_spin_air(m)
     local e = gRosaStates[m.playerIndex]
     local speedCap = 40
 
-    smlua_anim_util_set_animation(m.marioObj, "jers_rosa_galaxy_spin")
+    smlua_anim_util_set_animation(m.marioObj, "jers_rosa_galaxy_spin_air")
     m.marioBodyState.handState = e.isShooting and MARIO_HAND_PEACE_SIGN or MARIO_HAND_OPEN
 
     if m.actionTimer == 0 then
@@ -129,8 +167,8 @@ end
 local function act_galaxy_spin_ground(m)
     local e = gRosaStates[m.playerIndex]
     local speed = m.forwardVel
-    smlua_anim_util_set_animation(m.marioObj, "jers_rosa_galaxy_spin")
-    m.marioBodyState.handState = e.isShooting and MARIO_HAND_PEACE_SIGN or MARIO_HAND_OPEN
+    smlua_anim_util_set_animation(m.marioObj, "jers_rosa_galaxy_spin_ground")
+    m.marioBodyState.handState = (e.isShooting and MARIO_HAND_PEACE_SIGN) or (m.actionTimer < 15 and MARIO_HAND_OPEN) or MARIO_HAND_FISTS
 
     if m.actionTimer == 0 then
         audio_sample_play(SOUND_ROSA_GALAXY_SPIN, m.pos, 1)
@@ -169,8 +207,6 @@ local function act_galaxy_spin_ground(m)
     if m.actionTimer > 20 then
         set_mario_action(m, ACT_IDLE, 0)
     end
-
-    m.marioObj.header.gfx.pos.y = m.pos.y - 10
 end
 
 local rosaArgDefines = {
@@ -215,6 +251,19 @@ local function rosa_update(m)
 
     -- targetting
     e.targetObj = (m.controller.buttonDown & L_TRIG ~= 0 and m.action & ACT_FLAG_INTANGIBLE == 0 and e.starbits > 0) and rosa_find_target(m) or nil
+
+    -- grabbing
+    if m.action == ACT_ROSA_ATTACK and m.actionArg <= 2 and m.actionTimer == 1 then
+        for victim in pairs(rosaGrabTypes) do
+            local nearestGrabbable = obj_get_nearest_object_with_behavior_id(m.marioObj, victim)
+            if nearestGrabbable and dist_between_objects(m.marioObj, nearestGrabbable) <= rosaGrabRange then
+                rosa_gravity_grab_init(m, nearestGrabbable)
+            end
+        end
+    end
+    if e.grabbedObj.active and e.grabbedObj.obj then
+        rosa_gravity_grab_loop(m, e.grabbedObj.obj)
+    end
 end
 
 local function rosa_set_action(m)
@@ -228,7 +277,11 @@ end
 local function rosa_before_set_action(m, act)
     local e = gRosaStates[m.playerIndex]
     -- galaxy spin
-    if act == ACT_MOVE_PUNCHING or (e.targetObj and act == ACT_DIVE and m.action & ACT_FLAG_AIR == 0) then
+    if (
+    act == ACT_MOVE_PUNCHING or
+    act == ACT_PUNCHING or
+    (e.targetObj and act == ACT_DIVE and m.action & ACT_FLAG_AIR == 0)
+    ) then
         return set_mario_action(m, ACT_ROSA_ATTACK, ARG_GALAXY_SPIN_GROUND)
     elseif act == ACT_JUMP_KICK and not e.isShooting then
         return set_mario_action(m, ACT_ROSA_ATTACK, ARG_GALAXY_SPIN_FAST)
@@ -270,6 +323,29 @@ local function rosa_interact(m, o, type)
     if obj_has_model_extended(o, E_MODEL_STARBIT_COIN) ~= 0 then
         replaceCoinSound = true
     end
+
+    if m.action == ACT_ROSA_ATTACK and m.actionArg <= 2 then
+        if obj_has_behavior_id(o, id_bhvChuckya) ~= 0 then
+            o.oAction = 2
+            obj_init_animation(o, 2)
+            o.oVelY = 50
+            o.oForwardVel = 10
+            o.oMoveAngleYaw = m.faceAngle.y
+            m.forwardVel = -20
+            play_sound(SOUND_ACTION_BOUNCE_OFF_OBJECT, m.marioObj.header.gfx.cameraToObject)
+            set_mario_particle_flags(m, PARTICLE_TRIANGLE, 0)
+        end
+        if obj_has_behavior_id(o, id_bhvKingBobomb) ~= 0 and o.oAction == 2 then
+            o.oAction = 4
+            obj_init_animation(o, 2)
+            o.oVelY = 50
+            o.oForwardVel = 20
+            o.oMoveAngleYaw = m.faceAngle.y
+            m.forwardVel = -30
+            play_sound(SOUND_ACTION_BOUNCE_OFF_OBJECT, m.marioObj.header.gfx.cameraToObject)
+            set_mario_particle_flags(m, PARTICLE_TRIANGLE, 0)
+        end
+    end
 end
 local function rosa_sound(id)
     local m = gMarioStates[0]
@@ -282,9 +358,13 @@ local function rosa_sound(id)
     end
 end
 
+-- local function rosa_allow_interact(m, o, type)
+-- end
+
 _G.charSelect.character_hook_moveset(CT_ROSA, HOOK_MARIO_UPDATE, rosa_update)
 _G.charSelect.character_hook_moveset(CT_ROSA, HOOK_ON_SET_MARIO_ACTION, rosa_set_action)
 _G.charSelect.character_hook_moveset(CT_ROSA, HOOK_BEFORE_SET_MARIO_ACTION, rosa_before_set_action)
 _G.charSelect.character_hook_moveset(CT_ROSA, HOOK_ON_HUD_RENDER_BEHIND, rosa_hud)
 _G.charSelect.character_hook_moveset(CT_ROSA, HOOK_ON_INTERACT, rosa_interact)
 _G.charSelect.character_hook_moveset(CT_ROSA, HOOK_ON_PLAY_SOUND, rosa_sound)
+--_G.charSelect.character_hook_moveset(CT_ROSA, HOOK_ALLOW_INTERACT, rosa_allow_interact)
